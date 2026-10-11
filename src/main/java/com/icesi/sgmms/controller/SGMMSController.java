@@ -112,4 +112,21 @@ public class SGMMSController {
     public int getVehicleCount() {
         return vehicles.size();
     }
+    /**
+     * Resolves an incident using its identifier.
+     *
+     * Time complexity: O(n), because the incident is searched
+     * in a custom linked list.
+     *
+     * @param incidentId identifier of the incident
+     */
+    public void resolveIncident(String incidentId) {
+        Incident incident = findIncidentById(incidentId);
+
+        if (incident == null) {
+            throw new IllegalArgumentException("Incident not found");
+        }
+
+        incident.resolve();
+    }
 }

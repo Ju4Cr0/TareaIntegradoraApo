@@ -337,4 +337,95 @@ public class SGMMSControllerTest {
         assertThrows(IllegalArgumentException.class,
                 () -> controller.findVehicleById(" "));
     }
+
+    @Test
+    void resolveExistingAssignedIncident() {
+        SGMMSController controller = new SGMMSController();
+
+        Incident incident = createIncident(IncidentType.ACCIDENT);
+        Vehicle vehicle = createVehicle(VehicleType.AMBULANCE);
+
+        controller.registerIncident(incident);
+        controller.registerVehicle(vehicle);
+        controller.assignVehicleToIncident("INC-001", "VEH-001");
+
+        controller.resolveIncident("INC-001");
+
+        assertEquals(IncidentStatus.RESOLVED, incident.getStatus());
+        assertEquals(VehicleStatus.AVAILABLE, vehicle.getStatus());
+    }
+
+    @Test
+    void rejectResolvingUnknownIncident() {
+        SGMMSController controller = new SGMMSController();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> controller.resolveIncident("UNKNOWN")
+        );
+    }
+
+    @Test
+    void rejectResolvingPendingIncident() {
+        SGMMSController controller = new SGMMSController();
+
+        controller.registerIncident(
+                createIncident(IncidentType.ACCIDENT)
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> controller.resolveIncident("INC-001")
+        );
+    }
+
+    @Test
+    void rejectResolvingIncidentTwice() {
+        SGMMSController controller = new SGMMSController();
+
+        controller.registerIncident(
+                createIncident(IncidentType.ACCIDENT)
+        );
+        controller.registerVehicle(
+                createVehicle(VehicleType.AMBULANCE)
+        );
+
+        controller.assignVehicleToIncident("INC-001", "VEH-001");
+        controller.resolveIncident("INC-001");
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> controller.resolveIncident("INC-001")
+        );
+    }
+
+    @Test
+    void rejectResolvingNullIncidentId() {
+        SGMMSController controller = new SGMMSController();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> controller.resolveIncident(null)
+        );
+    }
+    @Test
+    void incompatibleAssignmentPreservesOriginalStates() {
+        SGMMSController controller = new SGMMSController();
+
+        Incident incident = createIncident(IncidentType.ACCIDENT);
+        Vehicle vehicle = createVehicle(VehicleType.PATROL);
+
+        controller.registerIncident(incident);
+        controller.registerVehicle(vehicle);
+
+        assertThrows(
+                InvalidAssignmentException.class,
+                () -> controller.assignVehicleToIncident("INC-001", "VEH-001")
+        );
+
+        assertEquals(IncidentStatus.PENDING, incident.getStatus());
+        assertEquals(VehicleStatus.AVAILABLE, vehicle.getStatus());
+        assertNull(incident.getAssignedVehicle());
+    }
+
 }
